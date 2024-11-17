@@ -5,10 +5,11 @@ const {User, Token} = require('../../models');
 const mailModel = require('../mail/mailModel');
 const UserDto = require('./dtos/UserDto');
 const tokensModel = require('../tokens/tokensModel');
+const path = require('path');
 
 class AuthModel {
     link(activationLink) {
-        return `${process.env.API_URL}/api/auth/activate/${activationLink}`;
+        return `${process.env.API_URL}/auth/activate/${activationLink}`;
     }
 
     async registration(username, email, password, image) {
@@ -30,7 +31,10 @@ class AuthModel {
         };
 
         if (image) {
-            values.image = image;
+            const imageId = uuid.v4();
+            const ext = image.name.split('.')[1];
+            values.image = `${process.env.API_URL}/user/images/${imageId}`;
+            await image.mv(path.resolve(process.env.BASE_PATH, 'images', `${imageId}.${ext}`));
         }
 
         const user = await User.create(values);
@@ -55,7 +59,7 @@ class AuthModel {
         }
 
         const activationLink = uuid.v4();
-        user.activationLink = activationLink;
+        user.set({activationLink, isActivated: false});
         await user.save();
         await mailModel.sendMail(email, this.link(activationLink));
 
@@ -85,7 +89,7 @@ class AuthModel {
     async activate(link) {
         const user = await User.findOne({where: {activationLink: link}});
         if (!user) {
-            throw ApiError.badRequest('user wasn\'t found');
+            throw ApiError.badRequest('activation link is wrong');
         }
 
         user.isActivated = true;

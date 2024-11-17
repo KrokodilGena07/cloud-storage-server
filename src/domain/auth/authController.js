@@ -19,13 +19,16 @@ class AuthController {
                 return next(ApiError.badRequest('data is invalid', errors.array()));
             }
 
-            if (req.files?.image instanceof File) {
+            const values = {username, email, password};
+
+            if (req.files?.image) {
                 if (!isImage(files.image.name)) {
                     return next(ApiError.badRequest('image is invalid'));
                 }
+                values.image = files.image;
             }
 
-            const data = await authModel.registration(username, email, password, files.image.data);
+            const data = await authModel.registration(...Object.values(values));
             res.cookie('refreshToken', data.refreshToken, cookieOptions);
             res.json(data);
         } catch (e) {

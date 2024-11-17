@@ -9,7 +9,7 @@ const authValidator = [
         minUppercase: 2,
         minNumbers: 2,
         minSymbols: 1
-    })
+    }).isLength({max: 30})
 ];
 
 module.exports = authValidator;

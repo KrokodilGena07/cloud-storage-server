@@ -8,6 +8,7 @@ function isImage(file) {
         case '.gif': return true;
         case '.jpg': return true;
         case '.jpeg': return true;
+        case '.webp': return true;
         default: return false;
     }
 }
