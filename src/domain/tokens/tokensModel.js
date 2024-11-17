@@ -19,6 +19,22 @@ class TokensModel {
         token.refreshToken = refreshToken;
         await token.save();
     }
+
+    #validateToken(token, secretKey) {
+        try {
+            return jwt.verify(token, secretKey);
+        } catch (e) {
+            return null
+        }
+    }
+
+    validateRefreshToken(token) {
+        return this.#validateToken(token, process.env.REFRESH_SECRET_KEY);
+    }
+
+    validateAccessToken(token) {
+        return this.#validateToken(token, process.env.ACCESS_SECRET_KEY);
+    }
 }
 
 module.exports = new TokensModel();
