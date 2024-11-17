@@ -1,7 +1,7 @@
 const Router = require('express');
-const authRouter = require('./authRouter');
-const usersRouter = require('./usersRouter');
-const activatedUsersRouter = require('./activatedUsersRouter');
+const authRouter = require('../domain/auth/authRouter');
+const usersRouter = require('../domain/users/usersRouter');
+const activatedUsersRouter = require('../domain/activatedUsers/activatedUsersRouter');
 
 const router = new Router();
 

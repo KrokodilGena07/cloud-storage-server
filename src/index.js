@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 require('dotenv/config');
 const router = require('./router');
 const db = require('./config/db');
+require('./models/index');
 
 const PORT = process.env.PORT;
 const app = express();
