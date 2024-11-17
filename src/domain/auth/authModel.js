@@ -1,7 +1,7 @@
 const ApiError = require('../../error/ApiError');
 const uuid = require('uuid');
 const bcrypt = require('bcrypt');
-const {User, Token} = require('../../models');
+const {User, Token, UserStorage} = require('../../models');
 const mailModel = require('../mail/mailModel');
 const UserDto = require('./dtos/UserDto');
 const tokensModel = require('../tokens/tokensModel');
@@ -39,6 +39,9 @@ class AuthModel {
 
         const user = await User.create(values);
         await mailModel.sendMail(email, this.link(activationLink));
+
+        const storageId = uuid.v4();
+        await UserStorage.create({id: storageId, userId: id});
 
         return await this.#finishAuthorization(user);
     }
