@@ -5,6 +5,9 @@ require('dotenv/config');
 const router = require('./router');
 const db = require('./config/db');
 require('./models/index');
+const errorMiddleware = require('./middlewares/errorMiddleware');
+const compression = require('compression');
+const compressionMiddleware = require('./middlewares/compressionMiddleware');
 
 const PORT = process.env.PORT;
 const app = express();
@@ -15,7 +18,9 @@ app.use(cors({
     credentials: true,
     origin: '*'
 }));
+app.use(compression({filter: compressionMiddleware}));
 app.use('/api', router);
+app.use(errorMiddleware);
 
 const start = async () => {
     try {

@@ -7,11 +7,8 @@ const User = db.define('user', {
     email: {type: DataTypes.STRING, allowNull: false, unique: true},
     password: {type: DataTypes.STRING, allowNull: false},
     image: {type: DataTypes.STRING},
+    isActivated: {type: DataTypes.BOOLEAN, defaultValue: false},
     activationLink: {type: DataTypes.UUID, allowNull: false, unique: true}
-});
-
-const ActivatedUser = db.define('activated_user', {
-    id: {type: DataTypes.UUID, primaryKey: true},
 });
 
 const UserStorage = db.define('user_storage', {
@@ -25,9 +22,6 @@ const Token = db.define('token', {
     refreshToken: {type: DataTypes.STRING, allowNull: false, unique: true}
 });
 
-User.hasOne(ActivatedUser);
-ActivatedUser.belongsTo(User);
-
 User.hasOne(UserStorage);
 UserStorage.belongsTo(User);
 
@@ -36,7 +30,6 @@ Token.belongsTo(User);
 
 module.exports = {
     User,
-    ActivatedUser,
     UserStorage,
     Token
 };
