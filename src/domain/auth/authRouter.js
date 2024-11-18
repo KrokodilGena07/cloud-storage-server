@@ -1,6 +1,6 @@
 const Router = require('express');
 const authController = require('./authController');
-const authValidator = require('./validators/authValidator');
+const authValidator = require('../../validators/authValidator');
 
 const authRouter = new Router();
 

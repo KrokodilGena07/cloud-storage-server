@@ -33,7 +33,7 @@ class AuthModel {
         if (image) {
             const imageId = uuid.v4();
             const ext = image.name.split('.')[1];
-            values.image = `${process.env.API_URL}/user/images/${imageId}`;
+            values.image = `${process.env.API_URL}/user/images/${imageId}.${ext}`;
             await image.mv(path.resolve(process.env.BASE_PATH, 'images', `${imageId}.${ext}`));
         }
 
