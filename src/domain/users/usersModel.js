@@ -25,7 +25,7 @@ class UsersModel {
             }
 
             const activationLink = uuid.v4();
-            const link = `${process.env.API_URL}/auth/activate/${activationLink}`;
+            const link = `${process.env.API_URL}/api/auth/activate/${activationLink}`;
             await mailModel.sendMail(email, link);
             user.set({activationLink, isActivated: false});
         }

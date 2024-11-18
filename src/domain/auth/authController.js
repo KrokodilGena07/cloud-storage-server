@@ -1,7 +1,7 @@
 const ApiError = require('../../error/ApiError');
 const {validationResult} = require('express-validator');
 const authModel = require('./authModel');
-const isImage = require('./validators/isImage');
+const isImage = require('../../validators/isImage');
 
 const cookieOptions = {
     httpOnly: true,
