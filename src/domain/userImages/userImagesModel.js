@@ -11,8 +11,8 @@ class UserImagesModel {
             throw ApiError.badRequest('user wasn\'t found');
         }
 
-        deleteUserImage(image);
-        user.image = createUserImage(image);
+        deleteUserImage(image.name);
+        user.image = await createUserImage(image);
 
         const updatedUser = await user.save();
         return new UserDto(updatedUser);
@@ -22,6 +22,10 @@ class UserImagesModel {
         const user = await User.findByPk(id);
         if (!user) {
             throw ApiError.badRequest('user wasn\'t found');
+        }
+
+        if (!user.image) {
+            throw ApiError.badRequest('user has no image');
         }
 
         deleteUserImage(user.image);

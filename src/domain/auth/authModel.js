@@ -6,10 +6,12 @@ const mailModel = require('../mail/mailModel');
 const UserDto = require('./dtos/UserDto');
 const tokensModel = require('../tokens/tokensModel');
 const createUserImage = require('../../utils/createUserImage');
+const fs = require('fs');
+const path = require('path');
 
 class AuthModel {
     link(activationLink) {
-        return `${process.env.API_URL}/api/auth/activate/${activationLink}`;
+        return `${process.env.API_URL}/auth/activate/${activationLink}`;
     }
 
     async registration(username, email, password, image) {
@@ -31,7 +33,7 @@ class AuthModel {
         };
 
         if (image) {
-            values.image = createUserImage(image);
+            values.image = await createUserImage(image);
         }
 
         const user = await User.create(values);
@@ -39,6 +41,8 @@ class AuthModel {
 
         const storageId = uuid.v4();
         await UserStorage.create({id: storageId, userId: id});
+
+        fs.mkdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {});
 
         return await this.#finishAuthorization(user);
     }

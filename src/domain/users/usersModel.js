@@ -25,7 +25,7 @@ class UsersModel {
             }
 
             const activationLink = uuid.v4();
-            const link = `${process.env.API_URL}/api/auth/activate/${activationLink}`;
+            const link = `${process.env.API_URL}/auth/activate/${activationLink}`;
             await mailModel.sendMail(email, link);
             user.set({activationLink, isActivated: false});
         }
@@ -58,7 +58,7 @@ class UsersModel {
             fs.rm(path.resolve(process.env.BASE_PATH, 'images', imageName), err => {});
         }
 
-        // todo delete all user data
+        fs.rmdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {});
     }
 }
 

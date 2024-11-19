@@ -14,7 +14,7 @@ class UserImagesController {
                 return next(ApiError.badRequest('id is invalid', errors.array()));
             }
 
-            if (!isImage(files.image.name)) {
+            if (!isImage(files?.image.name)) {
                 return next(ApiError.badRequest('image is invalid'));
             }
 
