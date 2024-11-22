@@ -13,7 +13,7 @@ const User = db.define('user', {
 
 const UserStorage = db.define('user_storage', {
     id: {type: DataTypes.STRING, primaryKey: true},
-    storageSize: {type: INTEGER, defaultValue: 1024 ** 2},
+    storageSize: {type: INTEGER, defaultValue: 1024 ** 3},
     usedSize: {type: INTEGER, defaultValue: 0}
 });
 
@@ -22,14 +22,28 @@ const Token = db.define('token', {
     refreshToken: {type: DataTypes.STRING, allowNull: false, unique: true}
 });
 
+const File = db.define('file', {
+    id: {type: DataTypes.STRING, primaryKey: true},
+    name: {type: DataTypes.STRING, allowNull: false},
+    size: {type: INTEGER, defaultValue: 0},
+    date: {type: DataTypes.DATE, defaultValue: DataTypes.NOW},
+    type: {type: DataTypes.STRING, allowNull: false},
+    path: {type: DataTypes.STRING, allowNull: false},
+    folderId: {type: DataTypes.STRING}
+});
+
 User.hasOne(UserStorage);
 UserStorage.belongsTo(User);
 
 User.hasOne(Token);
 Token.belongsTo(User);
 
+User.hasMany(File);
+File.belongsTo(User);
+
 module.exports = {
     User,
     UserStorage,
-    Token
+    Token,
+    File
 };
