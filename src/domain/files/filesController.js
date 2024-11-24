@@ -50,6 +50,22 @@ class FilesController {
         }
     }
 
+    async renameFile(req, res, next) {
+        try {
+            const {id, name, folderId} = req.body;
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return next(ApiError.badRequest('data is invalid', errors.array()));
+            }
+
+            const data = await filesModel.renameFile(id, name, folderId);
+            res.json(data);
+        } catch (e) {
+            next(e);
+        }
+    }
+
     async deleteFile(req, res, next) {
         try {
             const {id} = req.params;

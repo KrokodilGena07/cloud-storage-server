@@ -3,6 +3,7 @@ const ApiError = require('../../error/ApiError');
 const uuid = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const {Op, Sequelize} = require('sequelize');
 
 class FilesModel {
     async getFiles(userId, folderId) {
@@ -11,11 +12,12 @@ class FilesModel {
             throw ApiError.badRequest('userId is invalid');
         }
 
-        if (!folderId) {
-            return await File.findAll({where: {userId, folderId: null}});
+        const where = {userId, folderId: null};
+        if (folderId) {
+            where.folderId = folderId;
         }
 
-        return await File.findAll({where: {userId, folderId}});
+        return await File.findAll({where});
     }
 
     async createFolder(name, folderId, userId) {
@@ -24,37 +26,33 @@ class FilesModel {
             throw ApiError.badRequest('user id is invalid');
         }
 
-        if (!folderId) {
-            const candidate = await File.findOne({where: {name, userId}});
-            if (candidate) {
-                throw ApiError.badRequest('folder with this name already exists');
+        const where = {name, userId};
+        const values = {
+            name,
+            type: 'FOLDER',
+            id: uuid.v4(),
+            userId,
+            path: path.resolve(process.env.BASE_PATH, 'data', userId, name)
+        };
+
+        if (folderId) {
+            const parent = await File.findByPk(folderId);
+            if (!parent) {
+                throw ApiError.badRequest('folderId is invalid');
             }
 
-            const id = uuid.v4();
-            const folderPath = path.resolve(process.env.BASE_PATH, 'data', userId, name);
-            fs.mkdir(folderPath, err => console.log(err));
-
-            return File.create({
-                name, type: 'FOLDER', id, userId, path: folderPath
-            });
+            where.folderId = folderId;
+            values.folderId = folderId;
+            values.path = path.resolve(parent.path, name);
         }
 
-        const parent = await File.findByPk(folderId);
-        if (!parent) {
-            throw ApiError.badRequest('folder id is invalid');
-        }
-
-        const candidate = await File.findOne({where: {name, folderId, userId}});
+        const candidate = await File.findOne({where});
         if (candidate) {
             throw ApiError.badRequest('folder with this name already exists');
         }
 
-        const folderPath = path.resolve(parent.path, name);
-        const id = uuid.v4();
-        fs.mkdir(folderPath, err => {});
-        return File.create({
-            name, type: 'FOLDER', id, userId, folderId, path: folderPath
-        });
+        fs.mkdir(values.path, err => {});
+        return File.create(values);
     }
 
     async uploadFile(file, userId, folderId) {
@@ -63,62 +61,93 @@ class FilesModel {
             throw ApiError.badRequest('userId is invalid');
         }
 
-        const userStorage = await UserStorage.findOne({where: {userId}});
-        if (!userStorage) {
+        const storage = await UserStorage.findOne({where: {userId}});
+        if (!storage) {
             throw ApiError.badRequest('userId is invalid');
         }
 
-        if (!folderId) {
-            const candidate = await File.findOne({where: {userId, name: file.name}});
-            if (candidate) {
-                throw ApiError.badRequest('file with this name already exists');
-            }
-
-            const id = uuid.v4();
-            const filePath = path.resolve(process.env.BASE_PATH, 'data', userId, file.name);
-            await file.mv(filePath);
-
-            if (userStorage.storageSize < userStorage.usedSize + file.size) {
-                throw ApiError.badRequest('you storage is full')
-            }
-
-            userStorage.usedSize = userStorage.usedSize + file.size;
-            await userStorage.save();
-            return await File.create({
-                userId,
-                name: file.name,
-                type: 'FILE',
-                size: file.size,
-                id,
-                path: filePath
-            });
-        }
-
-        const candidate = await File.findOne({where: {userId, name: file.name, folderId}});
-        if (candidate) {
-            throw ApiError.badRequest('file with this name already exists');
-        }
-
-        const parent = await File.findByPk(folderId);
-        if (!parent) {
-            throw ApiError.badRequest('folder id is invalid');
-        }
-
-        const id = uuid.v4();
-        const filePath = path.resolve(parent.path, file.name);
-
-        await file.mv(filePath);
-        userStorage.usedSize = userStorage.usedSize + file.size;
-        await userStorage.save();
-        return await File.create({
+        let parentFolder;
+        const where = {userId, name: file.name};
+        const values = {
             userId,
             name: file.name,
             type: 'FILE',
             size: file.size,
-            id,
-            path: filePath,
-            folderId
-        });
+            id: uuid.v4(),
+            path: path.resolve(process.env.BASE_PATH, 'data', userId, file.name)
+        };
+
+        if (folderId) {
+            parentFolder = await File.findByPk(folderId);
+            if (!parentFolder) {
+                throw ApiError.badRequest('folderId is invalid');
+            }
+
+            where.folderId = folderId;
+            values.folderId = folderId;
+            values.path = path.resolve(parentFolder.path, file.name);
+            parentFolder.size = parentFolder.size + file.size;
+        }
+
+        const candidate = await File.findOne({where});
+        if (candidate) {
+            throw ApiError.badRequest('file with this name already exists');
+        }
+
+        if (storage.storageSize < storage.usedSize + file.size) {
+            throw ApiError.badRequest('you storage is full');
+        }
+
+        await file.mv(values.path);
+        storage.usedSize = storage.usedSize + file.size;
+
+        if (folderId) {
+            await parentFolder.save();
+        }
+
+        await storage.save();
+        return File.create(values);
+    }
+
+    async renameFile(id, name, folderId) {
+        const file = await File.findByPk(id);
+        if (!file) {
+            throw ApiError.badRequest('file wasn\'t found');
+        }
+
+        const where = {name, folderId: null};
+        if (folderId) {
+            where.folderId = folderId;
+        }
+
+        const candidate = await File.findOne({where});
+        if (candidate && candidate.id !== file.id) {
+            throw ApiError.badRequest('file with this name already exists');
+        }
+
+
+        const prePath = file.path.split(path.sep);
+        const newPath = path.join(...prePath.slice(0, -1), name);
+        await fs.rename(file.path, newPath, err => {});
+
+        if (file.type === 'FOLDER') {
+            const likePath = path.join(...prePath).replaceAll(path.sep, `${path.sep}\\`);
+            await File.update(
+                {path: Sequelize.fn('REPLACE', Sequelize.col('path'), path.join(...prePath), newPath)},
+                {
+                    where: {
+                        path: {
+                            [Op.like]: `${likePath}%`,
+                        }
+                    }
+                }
+            );
+        }
+
+        file.name = name;
+        file.path = newPath;
+
+        return await file.save();
     }
 
     async deleteFile(id) {
@@ -127,7 +156,20 @@ class FilesModel {
             throw ApiError.badRequest('file wasn\'t found');
         }
 
+        const user = await User.findByPk(file.userId);
+        if (!user) {
+            throw ApiError.badRequest('data is invalid');
+        }
+
+        const storage = await UserStorage.findOne({where: {userId: user.id}});
+        if (!storage) {
+            throw ApiError.badRequest('data is invalid');
+        }
+
+        storage.usedSize = storage.usedSize - file.size;
         fs.rm(file.path, err => {});
+
+        await storage.save();
         await file.destroy();
     }
 
@@ -137,7 +179,22 @@ class FilesModel {
             throw ApiError.badRequest('folder wasn\'t found');
         }
 
-        fs.rmdir(folder.path, err => {});
+        const user = await User.findByPk(folder.userId);
+        if (!user) {
+            throw ApiError.badRequest('data is invalid');
+        }
+
+        const storage = await UserStorage.findOne({where: {userId: user.id}});
+        if (!storage) {
+            throw ApiError.badRequest('data is invalid');
+        }
+
+        storage.usedSize = storage.usedSize - folder.size;
+        fs.rm(folder.path, {recursive: true}, err => {
+            console.log(err);
+        });
+
+        await storage.save();
         await File.destroy({where: {folderId: id}});
         await folder.destroy();
     }
