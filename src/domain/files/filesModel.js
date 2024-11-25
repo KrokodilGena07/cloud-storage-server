@@ -17,7 +17,27 @@ class FilesModel {
             where.folderId = folderId;
         }
 
+        // TODO ADD SORTING AND ORDERING FOLDERS AND FILES
+
         return await File.findAll({where});
+    }
+
+    async searchFiles(userId, search) {
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw ApiError.badRequest('userId is invalid');
+        }
+
+        // TODO ADD ORDERING FOLDERS AND FILES
+
+        return await File.findAll({
+            where: {
+                userId,
+                name: {
+                    [Op.iLike]: `%${search}%`
+                }
+            }
+        });
     }
 
     async createFolder(name, folderId, userId) {
@@ -147,6 +167,51 @@ class FilesModel {
         file.name = name;
         file.path = newPath;
 
+        return await file.save();
+    }
+
+    async replaceFile(id, folderId) {
+        const file = await File.findByPk(id);
+        if (!file) {
+            throw ApiError.badRequest('file wasn\'t found');
+        }
+
+        let parent = {
+            id: null,
+            path: path.join(...file.path.split(path.sep).slice(0, 4))
+        };
+
+        if (folderId) {
+            parent = await File.findByPk(folderId);
+            if (!parent) {
+                throw ApiError.badRequest('folder wasn\'t found');
+            }
+
+            if (parent.type !== 'FOLDER') {
+                throw ApiError.badRequest('folder wasn\'t found');
+            }
+        }
+
+        const prePath = file.path.split(path.sep);
+        const newPath = path.join(parent.path, prePath[prePath.length - 1]);
+        await fs.rename(file.path, newPath, err => {});
+
+        if (file.type === 'FOLDER') {
+            const likePath = file.path.replaceAll(path.sep, `${path.sep}\\`);
+            await File.update(
+                {path: Sequelize.fn('REPLACE', Sequelize.col('path'), file.path, newPath)},
+                {
+                    where: {
+                        path: {
+                            [Op.like]: `${likePath}%`,
+                        }
+                    }
+                }
+            );
+        }
+
+        file.folderId = parent.id;
+        file.path = newPath
         return await file.save();
     }
 

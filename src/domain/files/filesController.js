@@ -13,6 +13,16 @@ class FilesController {
         }
     }
 
+    async searchFiles(req, res, next) {
+        try {
+            const {userId, search} = req.query;
+            const data = await filesModel.searchFiles(userId, search);
+            res.json(data);
+        } catch (e) {
+            next(e);
+        }
+    }
+
     async createFolder(req, res, next) {
         try {
             const {name, folderId, userId} = req.body;
@@ -60,6 +70,22 @@ class FilesController {
             }
 
             const data = await filesModel.renameFile(id, name, folderId);
+            res.json(data);
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    async replaceFile(req, res, next) {
+        try {
+            const {id, folderId} = req.body;
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return next(ApiError.badRequest('replace file error', errors.array()));
+            }
+
+            const data = await filesModel.replaceFile(id, folderId);
             res.json(data);
         } catch (e) {
             next(e);
