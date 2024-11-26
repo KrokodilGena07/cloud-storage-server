@@ -48,17 +48,25 @@ class UsersModel {
             throw ApiError.badRequest('delete user error');
         }
 
-        await user.destroy();
-        await token.destroy();
-        await storage.destroy();
-
         if (user.image) {
             const img = user.image.split('/');
             const imageName = img[img.length - 1];
-            fs.rm(path.resolve(process.env.BASE_PATH, 'images', imageName), err => {});
+            fs.rm(path.resolve(process.env.BASE_PATH, 'images', imageName), err => {
+                if (err) {
+                    throw ApiError.badRequest('image wasn\'t deleted');
+                }
+            });
         }
 
-        fs.rmdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {});
+        fs.rmdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {
+            if (err) {
+                throw ApiError.badRequest('folder wasn\'t deleted');
+            }
+        });
+
+        await user.destroy();
+        await token.destroy();
+        await storage.destroy();
     }
 }
 

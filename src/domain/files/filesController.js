@@ -92,20 +92,10 @@ class FilesController {
         }
     }
 
-    async deleteFile(req, res, next) {
+    async deleteItem(req, res, next) {
         try {
             const {id} = req.params;
-            await filesModel.deleteFile(id);
-            res.json('OK');
-        } catch (e) {
-            next(e);
-        }
-    }
-
-    async deleteFolder(req, res, next) {
-        try {
-            const {id} = req.params;
-            await filesModel.deleteFolder(id);
+            await filesModel.deleteItem(id);
             res.json('OK');
         } catch (e) {
             next(e);

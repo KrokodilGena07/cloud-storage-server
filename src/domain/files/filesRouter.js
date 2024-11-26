@@ -11,7 +11,6 @@ filesRouter.post('/folder', authMiddleware, ...folderValidator, filesController.
 filesRouter.post('/file', authMiddleware, userIdValidator, filesController.uploadFile);
 filesRouter.put('/', authMiddleware, ...renameValidator, filesController.renameFile);
 filesRouter.put('/replace', authMiddleware, idValidator, filesController.replaceFile);
-filesRouter.delete('/file/:id', authMiddleware, filesController.deleteFile);
-filesRouter.delete('/folder/:id', authMiddleware, filesController.deleteFolder);
+filesRouter.delete('/:id', authMiddleware, filesController.deleteItem);
 
 module.exports = filesRouter;

@@ -1,7 +1,11 @@
 const ApiError = require('../../error/ApiError');
 const uuid = require('uuid');
 const bcrypt = require('bcrypt');
-const {User, Token, UserStorage} = require('../../models');
+const {
+    User,
+    Token,
+    UserStorage
+} = require('../../models');
 const mailModel = require('../mail/mailModel');
 const UserDto = require('./dtos/UserDto');
 const tokensModel = require('../tokens/tokensModel');
@@ -24,6 +28,12 @@ class AuthModel {
         const activationLink = uuid.v4();
         const hashPassword = await bcrypt.hash(password, 5);
 
+        fs.mkdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {
+            if (err) {
+                throw ApiError.badRequest('folder wasn\'t created');
+            }
+        });
+
         const values = {
             id,
             username,
@@ -41,8 +51,6 @@ class AuthModel {
 
         const storageId = uuid.v4();
         await UserStorage.create({id: storageId, userId: id});
-
-        fs.mkdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {});
 
         return await this.#finishAuthorization(user);
     }

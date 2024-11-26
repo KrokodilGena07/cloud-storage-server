@@ -9,8 +9,8 @@ const errorMiddleware = require('./middlewares/errorMiddleware');
 const compression = require('compression');
 const compressionMiddleware = require('./middlewares/compressionMiddleware');
 const fileUpload = require('express-fileupload');
-const {BG_GREEN, RESET} = require('./utils/colors');
 const path = require('path');
+const greenLog = require('./utils/greenLog');
 
 const PORT = process.env.PORT;
 const app = express();
@@ -31,11 +31,8 @@ const start = async () => {
     try {
         await db.authenticate();
         await db.sync();
-        app.listen(PORT, () => console.log(
-            BG_GREEN,
-            `Server started on PORT ${PORT}`,
-            RESET
-        ));
+        app.listen(PORT, () => greenLog(`Server started on PORT ${PORT}`));
+        console.log()
     } catch (e) {
         console.log(e);
     }

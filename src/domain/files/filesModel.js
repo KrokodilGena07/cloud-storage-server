@@ -71,7 +71,11 @@ class FilesModel {
             throw ApiError.badRequest('folder with this name already exists');
         }
 
-        fs.mkdir(values.path, err => {});
+        fs.mkdir(values.path, err => {
+            if (err) {
+                throw ApiError.badRequest('folder wasn\'t created');
+            }
+        });
         return File.create(values);
     }
 
@@ -148,7 +152,11 @@ class FilesModel {
 
         const prePath = file.path.split(path.sep);
         const newPath = path.join(...prePath.slice(0, -1), name);
-        await fs.rename(file.path, newPath, err => {});
+        await fs.rename(file.path, newPath, err => {
+            if (err) {
+                throw ApiError.badRequest('renaming error');
+            }
+        });
 
         if (file.type === 'FOLDER') {
             const likePath = path.join(...prePath).replaceAll(path.sep, `${path.sep}\\`);
@@ -194,7 +202,11 @@ class FilesModel {
 
         const prePath = file.path.split(path.sep);
         const newPath = path.join(parent.path, prePath[prePath.length - 1]);
-        await fs.rename(file.path, newPath, err => {});
+        await fs.rename(file.path, newPath, err => {
+            if (err) {
+                throw ApiError.badRequest('replacing error');
+            }
+        });
 
         if (file.type === 'FOLDER') {
             const likePath = file.path.replaceAll(path.sep, `${path.sep}\\`);
@@ -215,13 +227,13 @@ class FilesModel {
         return await file.save();
     }
 
-    async deleteFile(id) {
-        const file = await File.findByPk(id);
-        if (!file) {
-            throw ApiError.badRequest('file wasn\'t found');
+    async deleteItem(id) {
+        const item = await File.findByPk(id);
+        if (!item) {
+            throw ApiError.badRequest('data is invalid');
         }
 
-        const user = await User.findByPk(file.userId);
+        const user = await User.findByPk(item.userId);
         if (!user) {
             throw ApiError.badRequest('data is invalid');
         }
@@ -231,37 +243,25 @@ class FilesModel {
             throw ApiError.badRequest('data is invalid');
         }
 
-        storage.usedSize = storage.usedSize - file.size;
-        fs.rm(file.path, err => {});
+        storage.usedSize = storage.usedSize - item.size;
+        let options = {};
 
-        await storage.save();
-        await file.destroy();
-    }
-
-    async deleteFolder(id) {
-        const folder = await File.findByPk(id);
-        if (!folder) {
-            throw ApiError.badRequest('folder wasn\'t found');
+        if (item.type === 'FOLDER') {
+            options = {recursive: true};
         }
 
-        const user = await User.findByPk(folder.userId);
-        if (!user) {
-            throw ApiError.badRequest('data is invalid');
-        }
-
-        const storage = await UserStorage.findOne({where: {userId: user.id}});
-        if (!storage) {
-            throw ApiError.badRequest('data is invalid');
-        }
-
-        storage.usedSize = storage.usedSize - folder.size;
-        fs.rm(folder.path, {recursive: true}, err => {
-            console.log(err);
+        fs.rm(item.path, options, err => {
+            if (err) {
+                throw ApiError.badRequest('deleting error');
+            }
         });
 
+        if (item.type === 'FOLDER') {
+            await File.destroy({where: {folderId: id}});
+        }
+
         await storage.save();
-        await File.destroy({where: {folderId: id}});
-        await folder.destroy();
+        await item.destroy();
     }
 }
 
