@@ -1,12 +1,16 @@
-const {File, User, UserStorage} = require('../../models');
+const {
+    File,
+    User,
+    UserStorage
+} = require('../../models');
 const ApiError = require('../../error/ApiError');
 const uuid = require('uuid');
 const path = require('path');
 const fs = require('fs');
-const {Op, Sequelize} = require('sequelize');
+const {Op, Sequelize, literal, or} = require('sequelize');
 
 class FilesModel {
-    async getFiles(userId, folderId) {
+    async getFiles(userId, folderId, sort) {
         const user = await User.findByPk(userId);
         if (!user) {
             throw ApiError.badRequest('userId is invalid');
@@ -17,9 +21,36 @@ class FilesModel {
             where.folderId = folderId;
         }
 
-        // TODO ADD SORTING AND ORDERING FOLDERS AND FILES
+        let order;
 
-        return await File.findAll({where});
+        switch (sort) {
+            case 'name_up':
+                order = ['name', 'ASC'];
+                break;
+            case 'name_down':
+                order = ['name', 'DESC'];
+                break;
+            case 'size_up':
+                order = ['size', 'ASC'];
+                break;
+            case 'size_down':
+                order = ['size', 'DESC'];
+                break;
+            case 'date_up':
+                order = ['date', 'ASC'];
+                break;
+            case 'date_down':
+                order = ['date', 'DESC'];
+                break;
+        }
+
+        return await File.findAll({
+            where,
+            order: [
+                literal('CASE WHEN type = \'FOLDER\' THEN 0 ELSE 1 END'),
+                order && order
+            ].filter(Boolean)
+        });
     }
 
     async searchFiles(userId, search) {
@@ -28,15 +59,16 @@ class FilesModel {
             throw ApiError.badRequest('userId is invalid');
         }
 
-        // TODO ADD ORDERING FOLDERS AND FILES
-
         return await File.findAll({
             where: {
                 userId,
                 name: {
                     [Op.iLike]: `%${search}%`
                 }
-            }
+            },
+            order: [
+                literal('CASE WHEN type = \'FOLDER\' THEN 0 ELSE 1 END')
+            ]
         });
     }
 

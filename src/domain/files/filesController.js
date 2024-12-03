@@ -5,8 +5,8 @@ const filesModel = require('./filesModel');
 class FilesController {
     async getFiles(req, res, next) {
         try {
-            const {userId, folderId} = req.query;
-            const data = await filesModel.getFiles(userId, folderId);
+            const {userId, folderId, sort} = req.query;
+            const data = await filesModel.getFiles(userId, folderId, sort);
             res.json(data);
         } catch (e) {
             next(e);
