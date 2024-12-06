@@ -12,6 +12,7 @@ const tokensModel = require('../tokens/tokensModel');
 const createUserImage = require('../../utils/createUserImage');
 const fs = require('fs');
 const path = require('path');
+const ErrorTextList = require('../../error/ErrorTextList');
 
 class AuthModel {
     link(activationLink) {
@@ -21,7 +22,7 @@ class AuthModel {
     async registration(username, email, password, image) {
         const candidate = await User.findOne({where: {email}});
         if (candidate) {
-            throw ApiError.badRequest('user with this email already exists');
+            throw ApiError.badRequest(ErrorTextList.MAIL_ERROR);
         }
 
         const id = uuid.v4();
@@ -30,7 +31,7 @@ class AuthModel {
 
         fs.mkdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {
             if (err) {
-                throw ApiError.badRequest('folder wasn\'t created');
+                throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
             }
         });
 
@@ -57,17 +58,17 @@ class AuthModel {
 
     async login(email, password) {
         if (!email || !password) {
-            throw ApiError.badRequest('email or password is empty');
+            throw ApiError.badRequest(ErrorTextList.LOGIN_EMPTY_DATA);
         }
 
         const user = await User.findOne({where: {email}});
         if (!user) {
-            throw ApiError.badRequest('user with this email wasn\'t found');
+            throw ApiError.badRequest(ErrorTextList.USER_NOT_FOUND);
         }
 
         const isPasswordEqual = await bcrypt.compare(password, user.password);
         if (!isPasswordEqual) {
-            throw ApiError.badRequest('password is wrong');
+            throw ApiError.badRequest(ErrorTextList.PASSWORD_ERROR);
         }
 
         const activationLink = uuid.v4();
@@ -101,7 +102,7 @@ class AuthModel {
     async activate(link) {
         const user = await User.findOne({where: {activationLink: link}});
         if (!user) {
-            throw ApiError.badRequest('activation link is wrong');
+            throw ApiError.badRequest(ErrorTextList.ACTIVATION_ERROR);
         }
 
         user.isActivated = true;

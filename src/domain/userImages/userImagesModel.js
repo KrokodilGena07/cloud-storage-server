@@ -3,12 +3,13 @@ const ApiError = require('../../error/ApiError');
 const UserDto = require('../auth/dtos/UserDto');
 const createUserImage = require('../../utils/createUserImage');
 const deleteUserImage = require('../../utils/deleteUserImage');
+const ErrorTextList = require('../../error/ErrorTextList');
 
 class UserImagesModel {
     async setImage(image, id) {
         const user = await User.findByPk(id);
         if (!user) {
-            throw ApiError.badRequest('user wasn\'t found');
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
         }
 
         deleteUserImage(image.name);
@@ -21,11 +22,11 @@ class UserImagesModel {
     async deleteImage(id) {
         const user = await User.findByPk(id);
         if (!user) {
-            throw ApiError.badRequest('user wasn\'t found');
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
         }
 
         if (!user.image) {
-            throw ApiError.badRequest('user has no image');
+            throw ApiError.badRequest(ErrorTextList.USER_HAS_NO_IMAGE);
         }
 
         deleteUserImage(user.image);

@@ -1,9 +1,9 @@
 const authValidator = require('../../../validators/authValidator');
-const {body} = require('express-validator');
+const fieldValidator = require('../../../validators/fieldValidator');
 
 const userValidator = [
     ...authValidator,
-    body('id', 'id is invalid').isUUID(4)
+    fieldValidator('id')
 ];
 
 module.exports = userValidator;

@@ -2,6 +2,7 @@ const ApiError = require('../../error/ApiError');
 const {validationResult} = require('express-validator');
 const authModel = require('./authModel');
 const isImage = require('../../validators/isImage');
+const ErrorTextList = require('../../error/ErrorTextList');
 
 const cookieOptions = {
     httpOnly: true,
@@ -16,14 +17,14 @@ class AuthController {
             const errors = validationResult(req);
 
             if (!errors.isEmpty()) {
-                return next(ApiError.badRequest('data is invalid', errors.array()));
+                return next(ApiError.badRequest(ErrorTextList.INVALID_DATA, errors.array()));
             }
 
             const values = {username, email, password};
 
             if (req.files?.image) {
                 if (!isImage(files.image.name)) {
-                    return next(ApiError.badRequest('image is invalid'));
+                    return next(ApiError.badRequest(ErrorTextList.INVALID_IMAGE));
                 }
                 values.image = files.image;
             }

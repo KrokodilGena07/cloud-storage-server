@@ -2,6 +2,7 @@ const userImagesModel = require('./userImagesModel');
 const isImage = require('../../validators/isImage');
 const ApiError = require('../../error/ApiError');
 const {validationResult} = require('express-validator');
+const ErrorTextList = require('../../error/ErrorTextList');
 
 class UserImagesController {
     async setImage(req, res, next) {
@@ -11,11 +12,11 @@ class UserImagesController {
 
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return next(ApiError.badRequest('id is invalid', errors.array()));
+                return next(ApiError.badRequest(ErrorTextList.INVALID_DATA, errors.array()));
             }
 
             if (!isImage(files?.image.name)) {
-                return next(ApiError.badRequest('image is invalid'));
+                return next(ApiError.badRequest(ErrorTextList.INVALID_IMAGE));
             }
 
             const data = await userImagesModel.setImage(files.image, id);

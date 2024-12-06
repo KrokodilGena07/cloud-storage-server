@@ -10,18 +10,19 @@ const uuid = require('uuid');
 const UserDto = require('../auth/dtos/UserDto');
 const fs = require('fs');
 const path = require('path');
+const ErrorTextList = require('../../error/ErrorTextList');
 
 class UsersModel {
     async updateUser(username, email, password, id) {
         const user = await User.findByPk(id);
         if (!user) {
-            throw ApiError.badRequest('user wasn\'t found');
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
         }
 
         if (email !== user.email) {
             const candidate = await User.findOne({where: {email}});
             if (candidate) {
-                throw ApiError.badRequest('user with this email already exists');
+                throw ApiError.badRequest(ErrorTextList.USER_NOT_FOUND);
             }
 
             const activationLink = uuid.v4();
@@ -39,28 +40,32 @@ class UsersModel {
     async deleteUser(id) {
         const user = await User.findByPk(id);
         if (!user) {
-            throw ApiError.badRequest('user wasn\'t found');
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
         }
 
         const token = await Token.findOne({where: {userId: user.id}});
         const storage = await UserStorage.findOne({where: {userId: user.id}});
         if (!token || !storage) {
-            throw ApiError.badRequest('delete user error');
+            throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
         }
 
         if (user.image) {
             const img = user.image.split('/');
             const imageName = img[img.length - 1];
-            fs.rm(path.resolve(process.env.BASE_PATH, 'images', imageName), err => {
+            fs.rm(
+                path.resolve(process.env.BASE_PATH, 'images', imageName),err => {
                 if (err) {
-                    throw ApiError.badRequest('image wasn\'t deleted');
+                    throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
                 }
             });
         }
 
-        fs.rmdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {
+        fs.rm(path.resolve(
+            process.env.BASE_PATH, 'data', id),
+            {recursive: true},
+            err => {
             if (err) {
-                throw ApiError.badRequest('folder wasn\'t deleted');
+                throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
             }
         });
 

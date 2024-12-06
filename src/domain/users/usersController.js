@@ -1,6 +1,7 @@
 const userModel = require('./usersModel');
 const {validationResult} = require('express-validator');
 const ApiError = require('../../error/ApiError');
+const ErrorTextList = require('../../error/ErrorTextList');
 
 class UsersController {
     async updateUser(req, res, next) {
@@ -9,7 +10,7 @@ class UsersController {
             const errors = validationResult(req);
 
             if (!errors.isEmpty()) {
-                return next(ApiError.badRequest('update user error', errors.array()));
+                return next(ApiError.badRequest(ErrorTextList.INVALID_DATA, errors.array()));
             }
 
             const data = await userModel.updateUser(username, email, password, id);
