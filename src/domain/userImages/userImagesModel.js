@@ -12,7 +12,9 @@ class UserImagesModel {
             throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
         }
 
-        deleteUserImage(image.name);
+        if (user.image) {
+            await deleteUserImage(user.image);
+        }
         user.image = await createUserImage(image);
 
         const updatedUser = await user.save();
@@ -29,7 +31,7 @@ class UserImagesModel {
             throw ApiError.badRequest(ErrorTextList.USER_HAS_NO_IMAGE);
         }
 
-        deleteUserImage(user.image);
+        await deleteUserImage(user.image);
         user.image = null;
 
         const updatedUser = await user.save();

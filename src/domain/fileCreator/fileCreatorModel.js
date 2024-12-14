@@ -4,6 +4,7 @@ const uuid = require('uuid');
 const path = require('path');
 const fs = require('fs');
 const ErrorTextList = require('../../error/ErrorTextList');
+const db = require('../../config/db');
 
 class FileCreatorModel {
     async createFolder(name, folderId, userId) {
@@ -37,10 +38,14 @@ class FileCreatorModel {
             throw ApiError.badRequest(ErrorTextList.FILE_NAME_ERROR);
         }
 
-        fs.mkdir(values.path, err => {
-            if (err) {
-                throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
-            }
+        await new Promise((resolve, reject) => {
+            fs.mkdir(values.path, err => {
+                if (err) {
+                    reject(ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR));
+                } else {
+                    resolve();
+                }
+            });
         });
         return File.create(values);
     }
@@ -57,7 +62,12 @@ class FileCreatorModel {
         }
 
         let parentFolder;
-        const where = {userId, name: file.name};
+        const where = {
+            userId,
+            name: file.name,
+            folderId: null
+        };
+
         const values = {
             userId,
             name: file.name,
@@ -76,7 +86,7 @@ class FileCreatorModel {
             where.folderId = folderId;
             values.folderId = folderId;
             values.path = path.resolve(parentFolder.path, file.name);
-            parentFolder.size = parentFolder.size + file.size;
+            await this.#updateParent(parentFolder.id, values.size);
         }
 
         const candidate = await File.findOne({where});
@@ -97,6 +107,17 @@ class FileCreatorModel {
 
         await storage.save();
         return File.create(values);
+    }
+
+    async #updateParent(folderId, size) {
+        await db.transaction(async (transaction) => {
+            const folder = await File.findByPk(folderId);
+            console.log(folder);
+            if (!folder) return;
+
+            await folder.increment('size', {by: size});
+            await this.#updateParent(folder.folderId, size);
+        });
     }
 }
 

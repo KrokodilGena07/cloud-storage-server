@@ -1,7 +1,8 @@
 const {
     User,
     Token,
-    UserStorage
+    UserStorage,
+    File
 } = require('../../models');
 const ApiError = require('../../error/ApiError');
 const bcrypt = require('bcrypt');
@@ -22,7 +23,7 @@ class UsersModel {
         if (email !== user.email) {
             const candidate = await User.findOne({where: {email}});
             if (candidate) {
-                throw ApiError.badRequest(ErrorTextList.USER_NOT_FOUND);
+                throw ApiError.badRequest(ErrorTextList.MAIL_ERROR);
             }
 
             const activationLink = uuid.v4();
@@ -52,23 +53,33 @@ class UsersModel {
         if (user.image) {
             const img = user.image.split('/');
             const imageName = img[img.length - 1];
-            fs.rm(
-                path.resolve(process.env.BASE_PATH, 'images', imageName),err => {
-                if (err) {
-                    throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
-                }
-            });
+            await new Promise((resolve, reject) => {
+                fs.rm(
+                    path.resolve(process.env.BASE_PATH, 'images', imageName),
+                    err => {
+                    if (err) {
+                        reject(ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR));
+                    } else {
+                        resolve();
+                    }
+                });
+            })
         }
 
-        fs.rm(path.resolve(
-            process.env.BASE_PATH, 'data', id),
+        await new Promise((resolve, reject) => {
+            fs.rm(path.resolve(
+                process.env.BASE_PATH, 'data', id),
             {recursive: true},
             err => {
-            if (err) {
-                throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
-            }
+                if (err) {
+                    reject(ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR));
+                } else {
+                    resolve();
+                }
+            });
         });
 
+        await File.destroy({where: {userId: id}});
         await user.destroy();
         await token.destroy();
         await storage.destroy();

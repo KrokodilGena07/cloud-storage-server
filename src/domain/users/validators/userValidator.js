@@ -1,9 +1,9 @@
 const authValidator = require('../../../validators/authValidator');
-const fieldValidator = require('../../../validators/fieldValidator');
+const idValidator = require('../../../validators/idValidator');
 
 const userValidator = [
     ...authValidator,
-    fieldValidator('id')
+    idValidator('id')
 ];
 
 module.exports = userValidator;

@@ -1,8 +1,9 @@
-const fieldValidator = require('../../../validators/fieldValidator');
+const idValidator = require('../../../validators/idValidator');
+const {body} = require('express-validator');
 
 const createValidator = [
-    fieldValidator('name'),
-    fieldValidator('userId')
+    body('name', 'name is invalid').isLength({min: 1, max: 255}),
+    idValidator('userId')
 ];
 
 module.exports = createValidator;

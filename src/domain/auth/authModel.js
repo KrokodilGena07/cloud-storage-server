@@ -29,10 +29,14 @@ class AuthModel {
         const activationLink = uuid.v4();
         const hashPassword = await bcrypt.hash(password, 5);
 
-        fs.mkdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {
-            if (err) {
-                throw ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR);
-            }
+        await new Promise((resolve, reject) => {
+            fs.mkdir(path.resolve(process.env.BASE_PATH, 'data', id), err => {
+                if (err) {
+                    reject(ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR));
+                } else {
+                    resolve();
+                }
+            });
         });
 
         const values = {
