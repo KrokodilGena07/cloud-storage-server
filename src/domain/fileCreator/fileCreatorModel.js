@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const ErrorTextList = require('../../error/ErrorTextList');
 const db = require('../../config/db');
+const updateParents = require('../../utils/updateParents');
 
 class FileCreatorModel {
     async createFolder(name, folderId, userId) {
@@ -86,7 +87,9 @@ class FileCreatorModel {
             where.folderId = folderId;
             values.folderId = folderId;
             values.path = path.resolve(parentFolder.path, file.name);
-            await this.#updateParent(parentFolder.id, values.size);
+            await db.transaction(async (transaction) => {
+                await updateParents(parentFolder.id, values.size, 'increment');
+            });
         }
 
         const candidate = await File.findOne({where});
@@ -107,17 +110,6 @@ class FileCreatorModel {
 
         await storage.save();
         return File.create(values);
-    }
-
-    async #updateParent(folderId, size) {
-        await db.transaction(async (transaction) => {
-            const folder = await File.findByPk(folderId);
-            console.log(folder);
-            if (!folder) return;
-
-            await folder.increment('size', {by: size});
-            await this.#updateParent(folder.folderId, size);
-        });
     }
 }
 

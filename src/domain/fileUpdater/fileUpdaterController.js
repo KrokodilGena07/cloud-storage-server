@@ -2,6 +2,7 @@ const {validationResult} = require('express-validator');
 const ApiError = require('../../error/ApiError');
 const fileUpdaterModel = require('./fileUpdaterModel');
 const ErrorTextList = require('../../error/ErrorTextList');
+const jsonValidator = require('../../validators/jsonValidator');
 
 class FileUpdaterController {
     async rename(req, res, next) {
@@ -38,7 +39,18 @@ class FileUpdaterController {
 
     async replaceMany(req, res, next) {
         try {
+            const {list, folderId} = req.body;
 
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return next(ApiError.badRequest(ErrorTextList.INVALID_DATA, errors.array()));
+            }
+
+            await fileUpdaterModel.replaceMany(
+                list.filter(item => typeof item === 'string'),
+                folderId
+            );
+            res.json('OK');
         } catch (e) {
             next(e);
         }

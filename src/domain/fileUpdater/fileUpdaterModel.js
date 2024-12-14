@@ -1,9 +1,11 @@
-const {File, User} = require('../../models');
+const {File, User, UserStorage} = require('../../models');
 const ApiError = require('../../error/ApiError');
 const path = require('path');
 const fs = require('fs');
 const {Sequelize, Op} = require('sequelize');
 const ErrorTextList = require('../../error/ErrorTextList');
+const updateParents = require('../../utils/updateParents');
+const db = require('../../config/db');
 
 class FileUpdaterModel {
     async rename(id, name, folderId) {
@@ -40,10 +42,10 @@ class FileUpdaterModel {
     }
 
     async replaceOne(id, folderId) {
-        const {where, file} = await this.#getData(id, folderId);
-        if (folderId) {
-            where.folderId = folderId;
-        }
+        const {
+            where,
+            file
+        } = await this.#getData(id, folderId);
 
         const candidate = await File.findOne({where: {
             ...where, name: file.name
@@ -52,50 +54,51 @@ class FileUpdaterModel {
             throw ApiError.badRequest(ErrorTextList.FILE_NAME_ERROR);
         }
 
-        let parent = {
-            id: null,
-            path: path.join(...file.path.split(path.sep).slice(0, 4))
-        };
-
-        if (folderId) {
-            parent = await File.findByPk(folderId);
-            if (!parent) {
-                throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
-            }
-
-            if (parent.userId !== file.userId) {
-                throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
-            }
-
-            if (parent.type !== 'FOLDER') {
-                throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
-            }
-        }
-
-        const prePath = file.path.split(path.sep);
-        const newPath = path.join(parent.path, prePath[prePath.length - 1]);
-        await new Promise(async (resolve, reject) => {
-            await fs.rename(file.path, newPath, err => {
-                if (err) {
-                    reject(ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR));
-                } else {
-                    resolve();
-                }
-            });
-        });
-
-        if (file.type === 'FOLDER') {
-            const likePath = file.path.replaceAll(path.sep, `${path.sep}\\`);
-            await this.#updatePaths(likePath, file.path, newPath);
-        }
-
-        file.folderId = parent.id;
-        file.path = newPath
-        return await file.save();
+        const newParent = await this.#getNewParent(file, folderId);
+        return await this.#replaceItem(file, newParent);
     }
 
-    async replaceMany() {
+    async replaceMany(list, folderId) {
+        if (!list.length) {
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
+        }
 
+        const files = await File.findAll({where: {
+            id: {
+                [Op.in]: list
+            }
+        }});
+
+        if (!files.length) {
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
+        }
+
+        const user = await User.findByPk(files[0].userId);
+        if (!user) {
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
+        }
+
+        const where = {folderId: null, userId: user.id};
+        if (folderId) {
+            where.folderId = folderId;
+        }
+
+        const names = files.map(file => file.name);
+
+        const candidates = await File.findAll({where: {
+            ...where, name: {
+                [Op.in]: names
+            }
+        }});
+        if (candidates.length) {
+            throw ApiError.badRequest(ErrorTextList.FILE_NAME_ERROR);
+        }
+
+        const newParent = await this.#getNewParent(files[0], folderId);
+
+        for (const file of files) {
+            await this.#replaceItem(file, newParent);
+        }
     }
 
     async #updatePaths(likePath, oldPath, newPath) {
@@ -109,6 +112,35 @@ class FileUpdaterModel {
                 }
             }
         );
+    }
+
+    async #replaceItem(file, newParent) {
+        const prePath = file.path.split(path.sep);
+        const newPath = path.join(newParent.path, prePath[prePath.length - 1]);
+
+        await new Promise(async (resolve, reject) => {
+            await fs.rename(file.path, newPath,err => {
+                if (err) {
+                    reject(ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR));
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        await db.transaction(async transaction => {
+            await updateParents(file.folderId, file.size, 'decrement');
+            await updateParents(newParent.id, file.size, 'increment');
+        });
+
+        if (file.type === 'FOLDER') {
+            const likePath = file.path.replaceAll(path.sep, `${path.sep}\\`);
+            await this.#updatePaths(likePath, file.path, newPath);
+        }
+
+        file.folderId = newParent.id;
+        file.path = newPath;
+        return await file.save();
     }
 
     async #getData(id, folderId) {
@@ -130,6 +162,30 @@ class FileUpdaterModel {
         return {
             where, file
         };
+    }
+
+    async #getNewParent(file, folderId) {
+        let newParent = {
+            id: null,
+            path: path.join(...file.path.split(path.sep).slice(0, 4))
+        };
+
+        if (folderId) {
+            newParent = await File.findByPk(folderId);
+            if (!newParent) {
+                throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
+            }
+
+            if (newParent.userId !== file.userId) {
+                throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
+            }
+
+            if (newParent.type !== 'FOLDER') {
+                throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
+            }
+        }
+
+        return newParent;
     }
 }
 
