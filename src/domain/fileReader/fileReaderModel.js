@@ -66,8 +66,12 @@ class FileReaderModel {
         });
     }
 
-    async download() {
-
+    async download(id) {
+        const file = await File.findByPk(id);
+        if (!file) {
+            throw ApiError.badRequest(ErrorTextList.INVALID_DATA);
+        }
+        return file.path;
     }
 }
 

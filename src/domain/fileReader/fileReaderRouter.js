@@ -6,6 +6,6 @@ const fileReaderRouter = new Router();
 
 fileReaderRouter.get('/', authMiddleware, fileReaderController.getFiles);
 fileReaderRouter.get('/search', authMiddleware, fileReaderController.searchFiles);
-fileReaderRouter.get('/', authMiddleware, fileReaderController.download); // TODO MAKE THIS ENDPOINT
+fileReaderRouter.get('/:id', authMiddleware, fileReaderController.download);
 
 module.exports = fileReaderRouter;

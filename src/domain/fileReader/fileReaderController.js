@@ -23,7 +23,9 @@ class FileReaderController {
 
     async download(req, res, next) {
         try {
-
+            const {id} = req.params;
+            const data = await fileReaderModel.download(id);
+            res.download(data);
         } catch (e) {
             next(e);
         }

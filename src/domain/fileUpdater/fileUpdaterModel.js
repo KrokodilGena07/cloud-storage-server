@@ -1,4 +1,4 @@
-const {File, User, UserStorage} = require('../../models');
+const {File, User} = require('../../models');
 const ApiError = require('../../error/ApiError');
 const path = require('path');
 const fs = require('fs');
