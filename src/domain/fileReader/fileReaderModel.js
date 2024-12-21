@@ -39,7 +39,7 @@ class FileReaderModel {
         }
 
         return await File.findAll({
-            where,
+            where: {...where, isTrash: false},
             order: [
                 literal('CASE WHEN type = \'FOLDER\' THEN 0 ELSE 1 END'),
                 order && order
@@ -58,7 +58,8 @@ class FileReaderModel {
                 userId,
                 name: {
                     [Op.iLike]: `%${search}%`
-                }
+                },
+                isTrash: false
             },
             order: [
                 literal('CASE WHEN type = \'FOLDER\' THEN 0 ELSE 1 END')

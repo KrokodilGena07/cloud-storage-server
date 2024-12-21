@@ -7,6 +7,7 @@ const fileReaderRouter = require('../domain/fileReader/fileReaderRouter');
 const fileCreatorRouter = require('../domain/fileCreator/fileCreatorRouter');
 const fileUpdaterRouter = require('../domain/fileUpdater/fileUpdaterRouter');
 const fileDeleterRouter = require('../domain/fileDeleter/fileDeleterRouter');
+const trashRouter = require('../domain/trash/trashRouter');
 
 const router = new Router();
 
@@ -18,5 +19,6 @@ router.use('/file/reader', fileReaderRouter);
 router.use('/file/creator', fileCreatorRouter);
 router.use('/file/updater', fileUpdaterRouter);
 router.use('/file/deleter', fileDeleterRouter);
+router.use('/trash', trashRouter);
 
 module.exports = router;

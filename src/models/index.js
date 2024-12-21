@@ -14,7 +14,8 @@ const User = db.define('user', {
 const UserStorage = db.define('user_storage', {
     id: {type: DataTypes.STRING, primaryKey: true},
     storageSize: {type: INTEGER, defaultValue: 1024 ** 3},
-    usedSize: {type: INTEGER, defaultValue: 0}
+    usedSize: {type: INTEGER, defaultValue: 0},
+    trashSize: {type: INTEGER, defaultValue: 0}
 });
 
 const Token = db.define('token', {
@@ -29,7 +30,8 @@ const File = db.define('file', {
     date: {type: DataTypes.DATE, defaultValue: DataTypes.NOW},
     type: {type: DataTypes.STRING, allowNull: false},
     path: {type: DataTypes.STRING, allowNull: false},
-    folderId: {type: DataTypes.STRING}
+    folderId: {type: DataTypes.STRING},
+    isTrash: {type: DataTypes.BOOLEAN, defaultValue: false}
 });
 
 User.hasOne(UserStorage);

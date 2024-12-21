@@ -1,9 +1,8 @@
 const {File, User, UserStorage} = require('../../models');
 const ApiError = require('../../error/ApiError');
-const fs = require('fs');
 const ErrorTextList = require('../../error/ErrorTextList');
 const {Op} = require('sequelize');
-const path = require('path');
+const deleteFile = require('../../utils/deleteFile');
 
 class FileDeleterModel {
     async deleteOne(id) {
@@ -14,7 +13,7 @@ class FileDeleterModel {
 
         const storage = await this.#checkUser(item.userId);
 
-        await this.#delete(storage, item);
+        await deleteFile(storage, item);
         await storage.save();
     }
 
@@ -36,7 +35,7 @@ class FileDeleterModel {
         const storage = await this.#checkUser(files[0].userId);
 
         for (const file of files) {
-            await this.#delete(storage, file);
+            await deleteFile(storage, file);
         }
 
         await storage.save();
@@ -54,37 +53,6 @@ class FileDeleterModel {
         }
 
         return storage;
-    }
-
-    async #delete(storage, file) {
-        storage.usedSize = storage.usedSize - file.size;
-        let options = {};
-
-        if (file.type === 'FOLDER') {
-            options = {recursive: true};
-        }
-
-        await new Promise((resolve, reject) => {
-            fs.rm(file.path, options, err => {
-                if (err) {
-                    reject(ApiError.badRequest(ErrorTextList.UNEXPECTED_ERROR));
-                } else {
-                    resolve();
-                }
-            });
-        });
-
-        if (file.type === 'FOLDER') {
-            const likePath = file.path.replaceAll(path.sep, `${path.sep}\\`);
-
-            await File.destroy({where: {
-                path: {
-                    [Op.like]: `${likePath}%`,
-                }
-            }});
-        }
-
-        await file.destroy();
     }
 }
 
