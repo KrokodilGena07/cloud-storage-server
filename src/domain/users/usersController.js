@@ -24,6 +24,7 @@ class UsersController {
         try {
             const {id} = req.params;
             await userModel.deleteUser(id);
+            res.clearCookie('refreshToken');
             res.json('OK');
         } catch (e) {
             next(e);

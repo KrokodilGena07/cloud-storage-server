@@ -32,7 +32,10 @@ class UsersModel {
             user.set({activationLink, isActivated: false});
         }
 
-        const hashPassword = await bcrypt.hash(password, 5);
+        username = username || user.username;
+        email = email || user.email;
+
+        const hashPassword = await bcrypt.hash(password || user.password, 5);
         user.set({username, email, password: hashPassword});
         const newUser = await user.save();
         return new UserDto(newUser);
