@@ -17,7 +17,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(fileUpload({}));
-// app.use('/api/static', express.static(path.resolve(process.env.BASE_PATH, 'images')));
+app.use('/api/static', express.static(path.resolve(process.env.BASE_PATH, 'images')));
 app.use(cors({
     credentials: true,
     origin: 'http://localhost:3000'
