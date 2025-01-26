@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+require('dotenv/config');
 const path = require('path');
-require('dotenv').config({path: path.resolve(__dirname, '..', `.${process.env.NODE_ENV}.env`)});
 const router = require('./router');
 const db = require('./config/db');
 require('./models/index');
