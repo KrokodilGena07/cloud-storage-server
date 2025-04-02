@@ -1,5 +1,5 @@
 const {User, Token} = require('../../models');
-const ApiError = require('../../error/ApiError');
+const ApiError = require('../../error/api.error');
 const uuid = require('uuid');
 const bcrypt = require('bcrypt');
 const mailService = require('../mail/mail.service');

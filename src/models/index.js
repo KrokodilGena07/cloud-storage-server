@@ -16,6 +16,9 @@ const Token = db.define('token', {
     refreshToken: {type: DataTypes.STRING, allowNull: false, unique: true}
 });
 
+User.hasOne(Token);
+Token.belongsTo(User);
+
 module.exports = {
     User, Token
 };
